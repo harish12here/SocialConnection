@@ -4,7 +4,7 @@ import { getAuthUser } from '@/lib/jwt'
 
 export async function GET(
   req: Request,
-  { params }: { params: { post_id: string } }
+  { params }: { params: Promise<any> }
 ) {
   try {
     const { post_id } = await params
@@ -31,7 +31,7 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { post_id: string } }
+  { params }: { params: Promise<any> }
 ) {
   try {
     const user = await getAuthUser()
@@ -69,7 +69,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { post_id: string } }
+  { params }: { params: Promise<any> }
 ) {
   try {
     const user = await getAuthUser()

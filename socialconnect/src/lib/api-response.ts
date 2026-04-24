@@ -66,7 +66,7 @@ export function errorResponse(
  * Handle Supabase specific errors
  */
 export function handleSupabaseError(error: any) {
-  if (!error) return null
+  if (!error) return errorResponse('Unknown error', 500)
 
   // Supabase error codes mapping (example)
   // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#error-handling

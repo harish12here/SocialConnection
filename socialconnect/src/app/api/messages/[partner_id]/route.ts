@@ -8,7 +8,7 @@ import { getAuthUser } from '@/lib/jwt'
  */
 export async function GET(
   req: Request,
-  { params }: { params: { partner_id: string } }
+  { params }: { params: Promise<any> }
 ) {
   try {
     const user = await getAuthUser()

@@ -7,7 +7,7 @@ import { getAuthUser } from '@/lib/jwt'
  */
 export async function PATCH(
   req: Request,
-  { params }: { params: { call_id: string } }
+  { params }: { params: Promise<any> }
 ) {
   try {
     const user = await getAuthUser()
@@ -42,7 +42,7 @@ export async function PATCH(
  */
 export async function GET(
   req: Request,
-  { params }: { params: { call_id: string } }
+  { params }: { params: Promise<any> }
 ) {
   try {
     const user = await getAuthUser()

@@ -3,7 +3,7 @@ import { getServiceClient } from '@/lib/supabase'
 
 export async function GET(
   req: Request,
-  { params }: { params: { user_id: string } }
+  { params }: { params: Promise<any> }
 ) {
   try {
     const { user_id } = await params

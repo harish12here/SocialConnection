@@ -8,7 +8,7 @@ import { getAuthUser } from '@/lib/jwt'
  */
 export async function GET(
   req: Request,
-  { params }: { params: { post_id: string } }
+  { params }: { params: Promise<any> }
 ) {
   try {
     const { post_id } = await params
@@ -37,7 +37,7 @@ export async function GET(
  */
 export async function POST(
   req: Request,
-  { params }: { params: { post_id: string } }
+  { params }: { params: Promise<any> }
 ) {
   try {
     const user = await getAuthUser()

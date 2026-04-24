@@ -4,7 +4,7 @@ import { getAuthUser } from '@/lib/jwt'
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { post_id: string, comment_id: string } }
+  { params }: { params: Promise<any> }
 ) {
   try {
     const user = await getAuthUser()
