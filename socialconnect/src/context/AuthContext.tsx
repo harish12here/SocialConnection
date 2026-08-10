@@ -19,16 +19,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
-  const router = useRouter()
-
-  useEffect(() => {
-    // Load theme from localStorage
-    const savedTheme = localStorage.getItem('theme') as 'dark' | 'light' | null
-    if (savedTheme) {
-      setTheme(savedTheme)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme') as 'dark' | 'light' | null
+      if (saved) return saved
     }
-  }, [])
+    return 'dark'
+  })
+  const router = useRouter()
 
   useEffect(() => {
     // Apply theme to document

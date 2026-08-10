@@ -1,4 +1,14 @@
-// all the types used in the app
+export type PrivacySettings = {
+  privateAccount: boolean
+  whoCanMessage: 'everyone' | 'following'
+}
+
+export type NotificationSettings = {
+  likes: boolean
+  messages: boolean
+  follows: boolean
+  comments: boolean
+}
 
 export type User = {
   id: string
@@ -14,6 +24,9 @@ export type User = {
   following_count: number
   created_at: string
   updated_at: string
+  privacy_settings?: PrivacySettings
+  notification_settings?: NotificationSettings
+  interests?: string[]
 }
 
 export type Post = {
@@ -29,6 +42,7 @@ export type Post = {
   // joined from profiles
   author?: User
   liked_by_me?: boolean
+  bookmarked_by_me?: boolean
 }
 
 export type Comment = {
@@ -47,6 +61,22 @@ export type Follow = {
   following_id: string
   created_at: string
 }
+
+export type NotificationType = 'like' | 'comment' | 'follow' | 'message' | 'system'
+
+export type Notification = {
+  id: string
+  user_id: string
+  actor_id: string
+  type: NotificationType
+  entity_id: string | null
+  content: string
+  is_read: boolean
+  created_at: string
+  actor?: User
+}
+
+export type ConnectionStatus = 'none' | 'following' | 'follower' | 'mutual'
 
 // what we get back after login/register
 export type AuthResponse = {
@@ -80,6 +110,9 @@ export type ProfileUpdateForm = {
   location?: string
   first_name?: string
   last_name?: string
+  privacy_settings?: PrivacySettings
+  notification_settings?: NotificationSettings
+  interests?: string[]
 }
 
 export type Message = {

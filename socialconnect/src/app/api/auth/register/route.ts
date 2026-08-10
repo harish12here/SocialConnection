@@ -22,12 +22,12 @@ export async function POST(req: Request) {
 
     const supabase = getServiceClient()
 
-    // 2. Check if user exists
+    // 2. Check if username already exists
     const { data: existingUser } = await supabase
       .from('profiles')
       .select('username')
       .eq('username', username)
-      .single()
+      .maybeSingle()
 
     if (existingUser) {
       return errorResponse('Username already taken', 409)
@@ -41,7 +41,9 @@ export async function POST(req: Request) {
       user_metadata: { username, first_name, last_name }
     })
 
-    if (authError) return handleSupabaseError(authError)
+    if (authError || !authData?.user) {
+      return handleSupabaseError(authError || { message: 'Failed to create user account' })
+    }
 
     const userId = authData.user.id
 
@@ -76,8 +78,9 @@ export async function POST(req: Request) {
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 24
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
     })
 
     return response

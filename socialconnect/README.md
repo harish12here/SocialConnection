@@ -1,48 +1,31 @@
-# SocialConnect 🚀
+# 🚀 SocialConnect – Web Application
 
-A modern, premium social media platform built with Next.js, Supabase, and TypeScript.
+A modern, premium social media platform built with Next.js 16, Supabase, Tailwind CSS v4, and TypeScript.
 
-## Features ✨
+For full project documentation, architecture, folder structure, and setup instructions, see the main [Root README.md](../README.md).
 
-- **Authentication**: Secure JWT-based login and registration.
-- **Profiles**: Personalized user profiles with bio, avatar, and stats.
-- **Feed**: Chronological feed of posts from people you follow.
-- **Social**: Like, comment, and follow functionality.
-- **Media**: Single image upload support using Supabase Storage.
-- **Design**: Premium "Modern Slate" UI with glassmorphism and animations.
+## Quick Start 🏁
 
-## Tech Stack 🛠️
-
-- **Frontend**: Next.js 15 (App Router), TypeScript, Tailwind CSS.
-- **Backend**: Next.js API Routes, Jose (JWT).
-- **Database**: PostgreSQL (Supabase).
-- **Storage**: Supabase Storage.
-- **Icons**: Lucide React.
-
-## Getting Started 🏁
-
-1. **Clone the project**
-2. **Install dependencies**:
+1. **Install dependencies**:
    ```bash
    npm install
    ```
-3. **Setup Environment Variables**:
-   Create a `.env.local` file based on `.env.local.example` and fill in your Supabase credentials and JWT secret.
-4. **Database Setup**:
-   Run the SQL provided in `supabase/schema.sql` in your Supabase SQL Editor.
-5. **Run the Development Server**:
+
+2. **Environment Variables**:
+   Configure `.env.local` with your Supabase credentials:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   JWT_SECRET=your-32-character-secret-key
+   ```
+
+3. **Run Development Server**:
    ```bash
    npm run dev
    ```
 
-## Folder Structure 📂
-
-- `src/app`: Page routes and API endpoints.
-- `src/components`: Reusable UI components.
-- `src/context`: React Context for global state (Auth).
-- `src/lib`: Utility functions (Supabase, JWT, Storage).
-- `src/types`: TypeScript definitions.
-- `supabase`: Database schema and policies.
-
----
-*Created by SocialConnect Team*
+4. **Production Build**:
+   ```bash
+   npm run build
+   ```

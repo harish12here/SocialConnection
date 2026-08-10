@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { User, Post } from '@/types'
 import { useAuth } from '@/context/AuthContext'
 import PostCard from '@/components/PostCard'
+import { ProfileHeaderSkeleton, PostCardSkeleton } from '@/components/SkeletonLoader'
 import { 
   MapPinIcon, 
   LinkIcon, 
@@ -15,13 +16,15 @@ import {
   MessageCircleIcon,
   UsersIcon,
   UserPlusIcon,
-  GridIcon
+  UserCheckIcon,
+  GridIcon,
+  InfoIcon
 } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { apiClient } from '@/lib/api-client'
 
-type Tab = 'posts' | 'followers' | 'following'
+type Tab = 'posts' | 'followers' | 'following' | 'about'
 
 export default function ProfilePage() {
   const { user_id } = useParams()
@@ -67,6 +70,7 @@ export default function ProfilePage() {
   }, [user_id, currentUser])
 
   const fetchTabData = async (tab: Tab) => {
+    if (tab === 'about') return
     setTabLoading(true)
     try {
       if (tab === 'posts') {
@@ -110,8 +114,20 @@ export default function ProfilePage() {
         method: isFollowing ? 'DELETE' : 'POST'
       })
       if (res.success) {
-        setIsFollowing(!isFollowing)
-        // Optimistic count update
+        const willBeFollowing = !isFollowing
+        setIsFollowing(willBeFollowing)
+        
+        if (willBeFollowing) {
+          apiClient('/api/notifications', {
+            method: 'POST',
+            body: JSON.stringify({
+              user_id: user_id,
+              type: 'follow',
+              content: 'started following you'
+            })
+          }).catch(() => {})
+        }
+
         setProfile(prev => {
           if (!prev) return null
           return {
@@ -128,12 +144,17 @@ export default function ProfilePage() {
   }
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <Loader2Icon className="animate-spin text-indigo-500" size={32} />
+    <div className="max-w-3xl mx-auto pb-20 px-4 space-y-6">
+      <ProfileHeaderSkeleton />
+      <PostCardSkeleton />
     </div>
   )
 
-  if (!profile) return <div className="text-center py-20 text-slate-400 font-medium">User not found</div>
+  if (!profile) return (
+    <div className="text-center py-20 glass-card text-slate-400 font-medium">
+      User profile not found
+    </div>
+  )
 
   return (
     <div className="max-w-3xl mx-auto pb-20 px-4">
@@ -147,7 +168,7 @@ export default function ProfilePage() {
           <div className="flex justify-between items-end -mt-16 mb-6">
             <div className="w-32 h-32 rounded-3xl bg-slate-950 border-[6px] border-slate-950 overflow-hidden shadow-2xl relative group">
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-indigo-500/20 text-indigo-400 text-4xl font-bold">
                   {profile.username[0].toUpperCase()}
@@ -157,31 +178,41 @@ export default function ProfilePage() {
             
             <div className="flex items-center space-x-3 mb-2">
               {isOwnProfile ? (
-                <Link href="/settings" className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center space-x-2">
-                  <Edit3Icon size={18} />
+                <Link href="/settings" className="btn-primary text-xs flex items-center space-x-2">
+                  <Edit3Icon size={16} />
                   <span>Edit Profile</span>
                 </Link>
               ) : (
                 <>
-                  {isFollowing && (
-                    <Link 
-                      href={`/messages/${user_id}`} 
-                      className="p-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700 transition-all active:scale-95 shadow-lg"
-                      title="Message"
-                    >
-                      <MessageSquareIcon size={20} />
-                    </Link>
-                  )}
+                  <Link 
+                    href={`/messages/${user_id}`} 
+                    className="p-3 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl border border-slate-700 transition-all active:scale-95 shadow-lg"
+                    title="Message"
+                  >
+                    <MessageSquareIcon size={18} />
+                  </Link>
                   <button 
                     onClick={handleFollow}
                     disabled={followLoading}
-                    className={`px-8 py-2.5 rounded-xl font-bold transition-all shadow-lg active:scale-95 ${
+                    className={`px-6 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-lg active:scale-95 flex items-center space-x-2 ${
                       isFollowing 
                         ? 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/20' 
-                        : 'bg-white text-slate-950 hover:bg-slate-100'
+                        : 'btn-primary'
                     }`}
                   >
-                    {followLoading ? <Loader2Icon size={20} className="animate-spin" /> : isFollowing ? 'Following' : 'Follow'}
+                    {followLoading ? (
+                      <Loader2Icon size={16} className="animate-spin" />
+                    ) : isFollowing ? (
+                      <>
+                        <UserCheckIcon size={16} />
+                        <span>Connected</span>
+                      </>
+                    ) : (
+                      <>
+                        <UserPlusIcon size={16} />
+                        <span>Connect</span>
+                      </>
+                    )}
                   </button>
                 </>
               )}
@@ -192,13 +223,13 @@ export default function ProfilePage() {
             <div className="flex justify-between items-start">
               <div>
                 <h1 className="text-3xl font-black text-white tracking-tight">{profile.first_name} {profile.last_name}</h1>
-                <p className="text-indigo-400 font-medium">@{profile.username}</p>
+                <p className="text-indigo-400 font-medium text-sm">@{profile.username}</p>
               </div>
             </div>
 
-            {profile.bio && <p className="text-slate-300 text-lg leading-relaxed max-w-2xl">{profile.bio}</p>}
+            {profile.bio && <p className="text-slate-300 text-base leading-relaxed max-w-2xl">{profile.bio}</p>}
 
-            <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-400">
+            <div className="flex flex-wrap gap-x-6 gap-y-3 text-xs text-slate-400">
               {profile.location && (
                 <div className="flex items-center space-x-2">
                   <MapPinIcon size={16} className="text-indigo-500" />
@@ -208,7 +239,7 @@ export default function ProfilePage() {
               {profile.website && (
                 <div className="flex items-center space-x-2">
                   <LinkIcon size={16} className="text-indigo-500" />
-                  <a href={profile.website} target="_blank" className="text-indigo-400 hover:underline font-medium">
+                  <a href={profile.website} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline font-medium">
                     {profile.website.replace(/^https?:\/\//, '')}
                   </a>
                 </div>
@@ -221,15 +252,15 @@ export default function ProfilePage() {
 
             {/* Stats Row */}
             <div className="flex space-x-12 pt-6 border-t border-slate-800/50">
-              <button onClick={() => handleTabChange('posts')} className="flex flex-col group cursor-pointer">
+              <button onClick={() => handleTabChange('posts')} className="flex flex-col group cursor-pointer text-left">
                 <span className="text-2xl font-black text-white group-hover:text-indigo-400 transition-colors">{profile.posts_count}</span>
                 <span className="text-xs text-slate-500 uppercase tracking-[0.2em] font-bold">Posts</span>
               </button>
-              <button onClick={() => handleTabChange('followers')} className="flex flex-col group cursor-pointer">
+              <button onClick={() => handleTabChange('followers')} className="flex flex-col group cursor-pointer text-left">
                 <span className="text-2xl font-black text-white group-hover:text-indigo-400 transition-colors">{profile.followers_count}</span>
                 <span className="text-xs text-slate-500 uppercase tracking-[0.2em] font-bold">Followers</span>
               </button>
-              <button onClick={() => handleTabChange('following')} className="flex flex-col group cursor-pointer">
+              <button onClick={() => handleTabChange('following')} className="flex flex-col group cursor-pointer text-left">
                 <span className="text-2xl font-black text-white group-hover:text-indigo-400 transition-colors">{profile.following_count}</span>
                 <span className="text-xs text-slate-500 uppercase tracking-[0.2em] font-bold">Following</span>
               </button>
@@ -239,33 +270,42 @@ export default function ProfilePage() {
       </div>
 
       {/* Dynamic Content Tabs */}
-      <div className="mb-6 flex border-b border-slate-800/50 sticky top-0 bg-slate-950/80 backdrop-blur-xl z-10 px-2">
+      <div className="mb-6 flex border-b border-slate-800/50 sticky top-16 bg-slate-950/80 backdrop-blur-xl z-10 px-2">
         <button 
           onClick={() => handleTabChange('posts')}
-          className={`flex items-center space-x-2 px-6 py-4 border-b-2 transition-all font-bold text-sm uppercase tracking-wider ${
+          className={`flex items-center space-x-2 px-6 py-4 border-b-2 transition-all font-bold text-xs uppercase tracking-wider ${
             activeTab === 'posts' ? 'border-indigo-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
           }`}
         >
-          <GridIcon size={18} />
-          <span>Posts</span>
+          <GridIcon size={16} />
+          <span>Posts ({profile.posts_count})</span>
         </button>
         <button 
           onClick={() => handleTabChange('followers')}
-          className={`flex items-center space-x-2 px-6 py-4 border-b-2 transition-all font-bold text-sm uppercase tracking-wider ${
+          className={`flex items-center space-x-2 px-6 py-4 border-b-2 transition-all font-bold text-xs uppercase tracking-wider ${
             activeTab === 'followers' ? 'border-indigo-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
           }`}
         >
-          <UsersIcon size={18} />
-          <span>Followers</span>
+          <UsersIcon size={16} />
+          <span>Followers ({profile.followers_count})</span>
         </button>
         <button 
           onClick={() => handleTabChange('following')}
-          className={`flex items-center space-x-2 px-6 py-4 border-b-2 transition-all font-bold text-sm uppercase tracking-wider ${
+          className={`flex items-center space-x-2 px-6 py-4 border-b-2 transition-all font-bold text-xs uppercase tracking-wider ${
             activeTab === 'following' ? 'border-indigo-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
           }`}
         >
-          <UserPlusIcon size={18} />
-          <span>Following</span>
+          <UserPlusIcon size={16} />
+          <span>Following ({profile.following_count})</span>
+        </button>
+        <button 
+          onClick={() => handleTabChange('about')}
+          className={`flex items-center space-x-2 px-6 py-4 border-b-2 transition-all font-bold text-xs uppercase tracking-wider ${
+            activeTab === 'about' ? 'border-indigo-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          <InfoIcon size={16} />
+          <span>About</span>
         </button>
       </div>
 
@@ -273,59 +313,55 @@ export default function ProfilePage() {
       <div className="space-y-6">
         {tabLoading ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-600">
-            <Loader2Icon className="animate-spin mb-4" size={32} />
-            <p className="font-medium">Loading {activeTab}...</p>
+            <Loader2Icon className="animate-spin mb-4 text-indigo-500" size={32} />
+            <p className="font-medium text-sm">Loading {activeTab}...</p>
           </div>
         ) : (
           <>
             {activeTab === 'posts' && (
               <div>
                 {posts.length === 0 ? (
-                  <div className="text-center py-20 glass-card text-slate-500">
+                  <div className="text-center py-16 glass-card text-slate-500">
                     No posts shared yet.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="space-y-6">
                     {posts.map((post) => (
-                      <div
-                        key={post.id}
-                        className="group relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 aspect-square shadow-sm hover:-translate-y-1 transition-all"
-                      >
-                        {post.image_url ? (
-                          <img
-                            src={post.image_url}
-                            alt={post.content || 'Post image'}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center p-4 text-sm text-slate-200 text-center bg-slate-950/80">
-                            <span>{post.content || 'Shared a post'}</span>
-                          </div>
-                        )}
-
-                        <div className="absolute inset-x-0 bottom-0 p-3 bg-black/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="flex items-center justify-between text-xs text-slate-100 font-semibold">
-                            <span className="flex items-center gap-2">
-                              <HeartIcon size={14} />
-                              {post.like_count}
-                            </span>
-                            <span className="flex items-center gap-2">
-                              <MessageCircleIcon size={14} />
-                              {post.comment_count}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                      <PostCard key={post.id} post={post} onDelete={handleDeletePost} />
                     ))}
                   </div>
                 )}
               </div>
             )}
 
+            {activeTab === 'about' && (
+              <div className="glass-card p-6 space-y-6">
+                <h3 className="text-lg font-bold text-white">About {profile.first_name}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+                    <span className="text-slate-500 text-xs block mb-1">Full Name</span>
+                    <p className="font-semibold text-white">{profile.first_name} {profile.last_name}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+                    <span className="text-slate-500 text-xs block mb-1">Username</span>
+                    <p className="font-semibold text-indigo-400">@{profile.username}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+                    <span className="text-slate-500 text-xs block mb-1">Location</span>
+                    <p className="font-semibold text-white">{profile.location || 'Not specified'}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+                    <span className="text-slate-500 text-xs block mb-1">Website</span>
+                    <p className="font-semibold text-indigo-400">{profile.website || 'Not specified'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {(activeTab === 'followers' || activeTab === 'following') && (
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(activeTab === 'followers' ? followers : following).length === 0 ? (
-                  <div className="text-center py-20 glass-card text-slate-500">
+                  <div className="col-span-full text-center py-16 glass-card text-slate-500">
                     No {activeTab} yet.
                   </div>
                 ) : (
@@ -333,22 +369,19 @@ export default function ProfilePage() {
                     <Link 
                       key={u.id} 
                       href={`/profile/${u.id}`}
-                      className="flex items-center p-4 glass-card hover:bg-slate-800/50 transition-all border-none"
+                      className="flex items-center space-x-3 p-4 glass-card hover:border-indigo-500/40 transition-all border border-slate-800/60"
                     >
-                      <div className="w-12 h-12 rounded-xl bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-700">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-slate-700 flex-shrink-0 flex items-center justify-center overflow-hidden">
                         {u.avatar_url ? (
                           <img src={u.avatar_url} alt={u.username} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-indigo-400 font-bold">{u.username ? u.username[0].toUpperCase() : '?'}</span>
                         )}
                       </div>
-                      <div className="ml-4">
-                        <h4 className="font-bold text-white">{u.first_name} {u.last_name}</h4>
-                        <p className="text-sm text-slate-500">@{u.username}</p>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-white text-sm truncate">{u.first_name} {u.last_name}</h4>
+                        <p className="text-xs text-slate-500 truncate">@{u.username}</p>
                       </div>
-                      <button className="ml-auto p-2 text-slate-500 hover:text-white transition-colors">
-                        <UserPlusIcon size={20} />
-                      </button>
                     </Link>
                   ))
                 )}

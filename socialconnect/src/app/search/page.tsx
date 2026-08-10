@@ -95,7 +95,7 @@ export default function SearchPage() {
           ))
         ) : query.length >= 2 ? (
           <div className="text-center py-20 glass-card">
-            <p className="text-slate-400">No users found matching "{query}"</p>
+            <p className="text-slate-400">No users found matching &quot;{query}&quot;</p>
           </div>
         ) : (
           <div className="text-center py-20 glass-card">

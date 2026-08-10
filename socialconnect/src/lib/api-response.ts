@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-export type ApiResponse<T = any> = {
+export type ApiResponse<T = unknown> = {
   success: boolean
   status: number
   message: string
@@ -45,9 +45,8 @@ export function successResponse<T>(
 export function errorResponse(
   message?: string,
   status: number = 500,
-  error?: any
+  error?: unknown
 ) {
-  // Log error for server-side debugging
   if (process.env.NODE_ENV !== 'production') {
     console.error(`[API Error] ${status}:`, error || message)
   }
@@ -65,23 +64,21 @@ export function errorResponse(
 /**
  * Handle Supabase specific errors
  */
-export function handleSupabaseError(error: any) {
+export function handleSupabaseError(error: unknown) {
   if (!error) return errorResponse('Unknown error', 500)
 
-  // Supabase error codes mapping (example)
-  // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#error-handling
-  
-  const code = error.code || error.status
+  const errObj = error as { code?: string; status?: number; message?: string }
+  const code = errObj.code || errObj.status
   let status = 400
-  let message = error.message
+  let message = errObj.message || 'Database operation failed'
 
-  if (code === 'PGRST116') { // Not found
+  if (code === 'PGRST116') {
     status = 404
     message = 'Resource not found'
-  } else if (code === '23505') { // Unique violation
+  } else if (code === '23505') {
     status = 409
     message = 'Already exists'
-  } else if (code === '42501') { // Permission denied
+  } else if (code === '42501') {
     status = 403
     message = 'Insufficient permissions'
   }

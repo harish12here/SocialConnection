@@ -38,6 +38,9 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const [commentSubmitting, setCommentSubmitting] = useState(false)
   const [commentCount, setCommentCount] = useState(post.comment_count)
 
+  // Content state
+  const [displayContent, setDisplayContent] = useState(post.content)
+
   // Options menu state
   const [showOptions, setShowOptions] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -73,6 +76,18 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         method: liked ? 'DELETE' : 'POST',
       })
       if (!res.success) throw new Error(res.message)
+
+      if (!previousLiked && post.author_id !== user.id) {
+        apiClient('/api/notifications', {
+          method: 'POST',
+          body: JSON.stringify({
+            user_id: post.author_id,
+            type: 'like',
+            entity_id: post.id,
+            content: 'liked your post'
+          })
+        }).catch(() => {})
+      }
     } catch {
       setLiked(previousLiked)
       setLikesCount(previousCount)
@@ -112,6 +127,18 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         setComments(prev => [...prev, res.data])
         setCommentCount(prev => prev + 1)
         setCommentText('')
+
+        if (post.author_id !== user.id) {
+          apiClient('/api/notifications', {
+            method: 'POST',
+            body: JSON.stringify({
+              user_id: post.author_id,
+              type: 'comment',
+              entity_id: post.id,
+              content: 'commented on your post'
+            })
+          }).catch(() => {})
+        }
       }
     } catch (err) {
       console.error('Failed to submit comment', err)
@@ -171,7 +198,6 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       alert('An error occurred while deleting')
     } finally {
       setDeleting(false)
-      setShowOptions(false)
     }
   }
 
@@ -185,7 +211,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         body: JSON.stringify({ content: editedContent.trim() })
       })
       if (res.success) {
-        post.content = editedContent.trim() // Update local ref
+        setDisplayContent(editedContent.trim())
         setIsEditing(false)
       } else {
         alert(res.message || 'Failed to update post')
@@ -199,20 +225,20 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
 
   // --- Report ---
   const handleReport = () => {
+    alert('Post reported. Thank you for helping keep the community safe.')
     setShowOptions(false)
-    alert('Post reported. Our team will review it shortly.')
   }
 
   // --- Copy Link ---
-  const handleCopyLink = async () => {
+  const handleCopyLink = () => {
     const url = `${window.location.origin}/posts/${post.id}`
-    await navigator.clipboard.writeText(url)
+    navigator.clipboard.writeText(url)
     alert('Link copied to clipboard!')
     setShowOptions(false)
   }
 
   return (
-    <article className="glass-card mb-6 overflow-hidden animate-slide-up border border-slate-800/50 shadow-xl shadow-black/10">
+    <div className="glass-card overflow-hidden border border-slate-800/80 bg-slate-900/60 shadow-xl transition-all hover:border-slate-700">
       {/* Header */}
       <div className="p-4 flex items-center justify-between gap-4">
         <Link href={`/profile/${post.author_id}`} className="flex items-center space-x-3 group">
@@ -304,7 +330,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
               <button
                 onClick={() => {
                   setIsEditing(false)
-                  setEditedContent(post.content)
+                  setEditedContent(displayContent)
                 }}
                 className="px-4 py-1.5 text-sm font-medium text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-800"
               >
@@ -321,7 +347,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
             </div>
           </div>
         ) : (
-          <p className="text-slate-200 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+          <p className="text-slate-200 whitespace-pre-wrap leading-relaxed">{displayContent}</p>
         )}
       </div>
 
@@ -461,6 +487,6 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
           </div>
         </div>
       )}
-    </article>
+    </div>
   )
 }

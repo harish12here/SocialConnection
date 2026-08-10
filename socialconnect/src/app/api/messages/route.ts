@@ -48,6 +48,19 @@ export async function POST(req: Request) {
 
     if (messageError) return handleSupabaseError(messageError)
 
+    // Trigger notification
+    try {
+      await supabase.from('notifications').insert({
+        user_id: receiver_id,
+        actor_id: user.id,
+        type: 'message',
+        entity_id: message.id,
+        content: 'sent you a message'
+      })
+    } catch {
+      // ignore notification errors
+    }
+
     return successResponse(message, 'Message sent', 201)
   } catch (err: any) {
     return errorResponse('Failed to send message', 500, err)

@@ -3,6 +3,7 @@ import { ApiResponse } from './api-response'
 /**
  * Enhanced fetch wrapper for the frontend
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export async function apiClient<T = any>(
   url: string,
   options: RequestInit = {}
@@ -33,25 +34,21 @@ export async function apiClient<T = any>(
 
     return data
   } catch (error: any) {
-    // Handle network or parsing errors
     return {
       success: false,
       status: 0,
       message: 'Network error or server unreachable',
-      error: error.message,
+      error: error?.message || 'Unknown error',
     }
   }
 }
 
 /**
- * Helper to display errors (example using alert, 
- * but should be replaced with toast like sonner)
+ * Helper to display errors
  */
 export function handleApiError(response: ApiResponse) {
   if (!response.success) {
     console.error(`[API Error] ${response.status}:`, response.error || response.message)
-    // You can integrate a toast library here
-    // toast.error(response.message)
     return response.message
   }
   return null

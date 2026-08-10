@@ -135,3 +135,28 @@ alter table public.calls enable row level security;
 create policy "Users can see their calls" on public.calls for select using (auth.uid() = caller_id or auth.uid() = receiver_id);
 create policy "Users can initiate calls" on public.calls for insert with check (auth.uid() = caller_id);
 create policy "Users can update their calls" on public.calls for update using (auth.uid() = caller_id or auth.uid() = receiver_id);
+
+-- Notifications table
+create table public.notifications (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  actor_id uuid references public.profiles(id) on delete cascade not null,
+  type text not null check (type in ('like', 'comment', 'follow', 'message', 'system')),
+  entity_id text,
+  content text not null,
+  is_read boolean default false,
+  created_at timestamp with time zone default now()
+);
+
+-- Notifications policies
+alter table public.notifications enable row level security;
+create policy "Users can view their notifications" on public.notifications for select using (auth.uid() = user_id);
+create policy "Authenticated users can create notifications" on public.notifications for insert with check (auth.role() = 'authenticated');
+create policy "Users can update their notifications" on public.notifications for update using (auth.uid() = user_id);
+create policy "Users can delete their notifications" on public.notifications for delete using (auth.uid() = user_id);
+
+-- Extend profiles with JSONB settings & interests
+alter table public.profiles add column if not exists privacy_settings jsonb default '{"privateAccount": false, "whoCanMessage": "everyone"}';
+alter table public.profiles add column if not exists notification_settings jsonb default '{"likes": true, "messages": true, "follows": true, "comments": true}';
+alter table public.profiles add column if not exists interests text[] default '{}';
+

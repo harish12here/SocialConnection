@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { User } from '@/types'
-import { PhoneIcon, VideoIcon, XIcon, MicIcon, MicOffIcon, VideoOffIcon, PhoneOffIcon } from 'lucide-react'
+import { PhoneIcon, VideoIcon, MicIcon, MicOffIcon, VideoOffIcon, PhoneOffIcon } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 
 interface CallOverlayProps {
@@ -24,7 +24,7 @@ export default function CallOverlay({ callId, partner, type, isIncoming, onClose
   const streamRef = useRef<MediaStream | null>(null)
 
   useEffect(() => {
-    let interval: any
+    let interval: ReturnType<typeof setInterval> | undefined
     if (status === 'connected') {
       interval = setInterval(() => setTimer(prev => prev + 1), 1000)
     }

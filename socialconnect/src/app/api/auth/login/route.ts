@@ -24,7 +24,7 @@ export async function POST(req: Request) {
         .from('profiles')
         .select('id')
         .eq('username', identifier)
-        .single()
+        .maybeSingle()
       
       if (profileError || !profile) {
         return errorResponse('Invalid username or password', 401)
@@ -44,22 +44,17 @@ export async function POST(req: Request) {
       password
     })
 
-    if (authError) {
-      return errorResponse(authError.message, 401, authError)
+    if (authError || !data?.user) {
+      return errorResponse('Invalid email/username or password', 401, authError)
     }
 
     const userId = data.user.id
 
     // 3. Get full profile and update last login
-    const [{ data: profile, error: profileFetchError }] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', userId).single(),
-      supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', userId)
-    ])
-
-    if (profileFetchError || !profile) {
-      // If user exists in auth but no profile, we should still allow login but return minimal data
-      console.warn(`Profile not found for user ${userId}`)
-    }
+    const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+    
+    // Update last login timestamp asynchronously
+    supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', userId).then()
 
     // 4. Create JWT token
     const token = await createToken({ 
@@ -68,8 +63,16 @@ export async function POST(req: Request) {
       username: profile?.username || identifier 
     })
 
+    const userPayload = profile || { 
+      id: userId, 
+      email: data.user.email, 
+      username: identifier,
+      first_name: '',
+      last_name: ''
+    }
+
     const response = successResponse({
-      user: profile || { id: userId, email: data.user.email, username: identifier },
+      user: userPayload,
       token
     }, 'Login successful')
 
@@ -77,7 +80,8 @@ export async function POST(req: Request) {
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
+      path: '/',
       maxAge: 60 * 60 * 24 * 7 // 7 days
     })
 
